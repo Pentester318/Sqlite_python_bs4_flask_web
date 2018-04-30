@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+#
+from flask import Flask
+import sqlite3
+import time
+from datetime import datetime
+from urllib.request import urlopen
+from bs4 import BeautifulSoup
+
+app = Flask(__name__)
+
+# Дата и время в переменной с помощью двух бибиотек
+dt = datetime.now()
+date = str(dt.strftime("%d.%m.%Y %H:%M:%S"))
+# Парсер с помощью которого ищю див по классу
+html = urlopen('https://finance.rambler.ru/currencies/USD/').read()
+soup = BeautifulSoup(html, 'lxml')
+div = soup.find('div', class_="exr-top-info__val")
+eventt = str(div)
+# Подключаемся к базе
+con = sqlite3.connect('test_base.db')
+cur = con.cursor()
+# Создаёт если её нет
+sql = """\
+CREATE TABLE IF NOT EXISTS testTable (
+    id INTEGER PRIMARY KEY,
+    date TEXT,
+    eventt TEXT);
+"""
+# Тест на ошибки
+try:
+    cur.executescript(sql)
+except sqlite3.DatabaseError as err:
+    print('error: ', err)
+else:
+	print('Base was created')
+base = (date, eventt)
+sql = "INSERT INTO testTable (date, eventt) VALUES(?, ?)"
+
+try:
+    cur.execute(sql, base)
+except sqlite3.DatabaseError as err:
+    print('error: ', err )
+    print(contentError.format(err))
+else:
+    con.commit()
+
+
+
+#Смотрим, что записалось
+cur.execute('select * from testTable')
+test = cur.fetchall()
+a = ()
+for row in test:
+	a = a + row
+@app.route('/')
+def index():
+    return '<h1>{0}<h1>'.format(a)
+
+if __name__ == '__main__':
+    app.run()
